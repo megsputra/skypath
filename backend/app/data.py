@@ -1,9 +1,3 @@
-"""
-Loads flights.json once at startup and builds the lookup structures the
-rest of the app depends on: an airport index (code -> Airport) and a
-flight index (origin code -> flights departing from that airport).
-"""
-
 import os
 import json
 from dataclasses import dataclass
@@ -28,15 +22,13 @@ class Flight:
     airline: str
     origin: str
     destination: str
-    departureTime: str  # local ISO string, no UTC offset, e.g. "2024-03-15T08:30:00"
-    arrivalTime: str  # local ISO string, no UTC offset
+    departureTime: str  # local ISO string
+    arrivalTime: str
     price: float
     aircraft: str
 
 
 class FlightData:
-    """Holds the loaded dataset plus the indexes derived from it."""
-
     def __init__(
         self, airports: dict[str, Airport], flights_by_origin: dict[str, list[Flight]]
     ):
@@ -49,15 +41,10 @@ class FlightData:
 
 def load_flight_data(path: str = FLIGHTS_PATH) -> FlightData:
     """
-    Step 1 (indexing part) + step 3.
-
-    TODO:
-    - Read and parse the JSON file at `path`.
-    - Build `airports`: dict of code -> Airport, from the "airports" list.
-    - Build `flights_by_origin`: dict of origin code -> list[Flight], from
-      the "flights" list, sorted by departureTime. This is what lets
-      search.py look up "what can I fly next from here" in O(1) instead of
-      scanning all ~300 flights on every recursive hop.
+    Load flight data from JSON file provided at path.
+    Build a dict of airport_code -> Airport object
+    Build a dict of origin_code -> List of flights sorted by departure
+    This ensures instant look up of flights from a certain airport
     """
     with open(path) as f:
         flight_data = json.load(f)
@@ -68,11 +55,16 @@ def load_flight_data(path: str = FLIGHTS_PATH) -> FlightData:
 
     flights_by_origin = {}
     for f in flight_data["flights"]:
-        flight = Flight(**f)
-        # group by origin
+        try:
+            price = float(f["price"])
+        except (TypeError, ValueError):
+            continue
+        flight = Flight(**{**f, "price": price})
+
+        # Group flights by origin
         flights_by_origin.setdefault(flight.origin, []).append(flight)
 
-    # sort by departure time
+    # Sort flights by departure time
     for fl in flights_by_origin.values():
         fl.sort(key=lambda f: f.departureTime)
 

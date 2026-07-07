@@ -14,7 +14,7 @@ export async function searchFlights(origin, destination, date) {
   try {
     response = await fetch(`${API_BASE}/search?${params.toString()}`);
   } catch (networkErr) {
-    throw new ApiError('Could not reach the backend. Is it running?', 0);
+    throw new ApiError('Something went wrong. Cannot reach server.', 0);
   }
 
   let body = null;

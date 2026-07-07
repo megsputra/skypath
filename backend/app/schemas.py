@@ -1,7 +1,5 @@
 """
-Pydantic response models -- this is the API contract the frontend was
-built against (see frontend/src/api.js and frontend/src/components/FlightCard.jsx).
-Don't change field names/shapes here without updating the frontend too.
+Pydantic response models. Used by frotnend
 """
 
 from pydantic import BaseModel
@@ -24,7 +22,7 @@ class Layover(BaseModel):
 
 class Itinerary(BaseModel):
     segments: list[Segment]
-    layovers: list[Layover]  # length == len(segments) - 1
+    layovers: list[Layover]
     totalDurationMinutes: int
     totalPrice: float
 

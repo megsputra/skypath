@@ -93,14 +93,21 @@ export default function SearchForm({ onSearch, disabled }) {
           {errors.date && <p className="text-xs text-red-600 mt-1">{errors.date}</p>}
         </div>
 
-        <button
-          type="submit"
-          disabled={disabled}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded flex items-center justify-center gap-2 transition-colors h-[42px]"
-        >
-          <Search size={18} />
-          {disabled ? 'Searching…' : 'Search Flights'}
-        </button>
+        <div>
+          {/* Invisible spacer matching the label height so the button lines
+              up with the inputs, not the labels. */}
+          <span className="block text-sm font-medium mb-1" aria-hidden="true">
+            &nbsp;
+          </span>
+          <button
+            type="submit"
+            disabled={disabled}
+            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-bold p-2 rounded flex items-center justify-center gap-2 transition-colors"
+          >
+            <Search size={18} />
+            {disabled ? 'Searching…' : 'Search Flights'}
+          </button>
+        </div>
       </form>
     </div>
   );

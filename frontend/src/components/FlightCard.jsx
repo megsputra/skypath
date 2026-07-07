@@ -1,15 +1,15 @@
 import React from 'react';
-import { ArrowRight, Clock, Banknote } from 'lucide-react';
+import { Plane, Clock, Zap, Tag } from 'lucide-react';
 
 // Backend times are local-to-the-airport ISO strings (e.g. "2024-03-15T08:30:00").
 // We format them as wall-clock time without any timezone conversion.
 function formatTime(isoLocal) {
-  const [datePart, timePart] = isoLocal.split('T');
+  const [, timePart] = isoLocal.split('T');
   const [hh, mm] = timePart.split(':');
   const hour = parseInt(hh, 10);
   const period = hour >= 12 ? 'PM' : 'AM';
   const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-  return { time: `${displayHour}:${mm} ${period}`, date: datePart };
+  return `${displayHour}:${mm} ${period}`;
 }
 
 function formatDuration(totalMinutes) {
@@ -18,63 +18,92 @@ function formatDuration(totalMinutes) {
   return `${hours}h ${minutes}m`;
 }
 
-export default function FlightCard({ itinerary }) {
+function stopLabel(segmentCount) {
+  const stops = segmentCount - 1;
+  if (stops === 0) return 'Direct';
+  return stops === 1 ? '1 stop' : `${stops} stops`;
+}
+
+export default function FlightCard({ itinerary, isFastest, isCheapest }) {
   const { segments, layovers = [], totalDurationMinutes, totalPrice } = itinerary;
+  const stops = segments.length - 1;
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden border border-slate-200">
+    <div className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
       <div className="p-6">
-        <div className="flex flex-col gap-4">
-          {segments.map((segment, idx) => {
-            const dep = formatTime(segment.departureTime);
-            const arr = formatTime(segment.arrivalTime);
-            return (
-              <React.Fragment key={segment.flightNumber + idx}>
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex flex-col">
-                    <span className="text-lg font-extrabold text-slate-900">{segment.flightNumber}</span>
-                    <span className="text-xs text-slate-500 uppercase tracking-wide">{segment.airline}</span>
-                  </div>
+        {/* Header: stop count + tags on the left, total price on the right */}
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                stops === 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {stopLabel(segments.length)}
+            </span>
+            {isFastest && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+                <Zap size={12} /> Fastest
+              </span>
+            )}
+            {isCheapest && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700">
+                <Tag size={12} /> Cheapest
+              </span>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-slate-900 leading-none">${totalPrice.toFixed(2)}</div>
+            <div className="text-xs text-slate-400 mt-1">total</div>
+          </div>
+        </div>
 
-                  <div className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                    <div className="text-right">
-                      <div className="font-semibold">{dep.time}</div>
-                      <div className="text-xs text-slate-500">{segment.origin}</div>
-                    </div>
-                    <ArrowRight className="text-blue-500" size={16} />
-                    <div>
-                      <div className="font-semibold">{arr.time}</div>
-                      <div className="text-xs text-slate-500">{segment.destination}</div>
-                    </div>
-                  </div>
+        {/* Segment timeline */}
+        <div className="space-y-3">
+          {segments.map((segment, idx) => (
+            <React.Fragment key={segment.flightNumber + idx}>
+              <div className="flex items-center gap-4">
+                {/* Departure */}
+                <div className="w-20 shrink-0">
+                  <div className="text-base font-semibold text-slate-900">{formatTime(segment.departureTime)}</div>
+                  <div className="text-xs font-medium text-slate-400">{segment.origin}</div>
+                </div>
 
-                  <div className="text-right text-sm font-semibold text-slate-700">
-                    ${segment.price.toFixed(2)}
+                {/* Connector with flight info */}
+                <div className="flex-1 flex flex-col items-center">
+                  <div className="text-xs font-medium text-slate-500">
+                    {segment.flightNumber} · {segment.airline}
+                  </div>
+                  <div className="w-full flex items-center gap-1 my-1">
+                    <div className="h-px flex-1 bg-slate-200" />
+                    <Plane size={14} className="text-indigo-500 rotate-90" />
+                    <div className="h-px flex-1 bg-slate-200" />
                   </div>
                 </div>
 
-                {idx < segments.length - 1 && layovers[idx] && (
-                  <div className="flex items-center gap-2 text-orange-600 bg-orange-50 px-3 py-2 rounded-lg text-sm">
-                    <Clock size={14} />
-                    <span>
-                      Layover in {layovers[idx].airport}: {formatDuration(layovers[idx].durationMinutes)}
-                    </span>
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
+                {/* Arrival */}
+                <div className="w-20 shrink-0 text-right">
+                  <div className="text-base font-semibold text-slate-900">{formatTime(segment.arrivalTime)}</div>
+                  <div className="text-xs font-medium text-slate-400">{segment.destination}</div>
+                </div>
+              </div>
+
+              {idx < segments.length - 1 && layovers[idx] && (
+                <div className="flex items-center gap-2 text-amber-700 bg-amber-50/70 px-3 py-1.5 rounded-lg text-xs font-medium w-fit mx-auto">
+                  <Clock size={12} />
+                  <span>
+                    {formatDuration(layovers[idx].durationMinutes)} layover in {layovers[idx].airport}
+                  </span>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center flex-wrap gap-2">
-          <div className="flex items-center gap-2 text-slate-600 font-medium text-sm">
-            <Clock size={16} />
-            <span>Total duration: {formatDuration(totalDurationMinutes)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-blue-700 font-bold text-lg">
-            <Banknote size={20} />
-            <span>${totalPrice.toFixed(2)}</span>
-          </div>
+        {/* Footer: total duration */}
+        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2 text-slate-500 text-sm">
+          <Clock size={15} />
+          <span className="font-medium">{formatDuration(totalDurationMinutes)} total travel time</span>
         </div>
       </div>
     </div>

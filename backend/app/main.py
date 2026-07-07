@@ -6,7 +6,11 @@ modules. Keep it thin -- if a handler needs more than a few lines of logic,
 that logic belongs in one of the other modules instead.
 """
 
-from fastapi import FastAPI, HTTPException, Query
+import logging
+from datetime import date as date_cls
+
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.middleware.cors import CORSMiddleware
 
 from .data import load_flight_data
@@ -14,9 +18,11 @@ from .itinerary import build_and_sort_itineraries
 from .schemas import SearchResponse
 from .search import find_itineraries
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("skypath")
+
 app = FastAPI(title="SkyPath API")
 
-# Allow the frontend (served separately) to call this API during local dev
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,10 +30,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Loaded once at startup. NB: this will raise NotImplementedError until
-# data.load_flight_data() is implemented (step 1/3) -- that's expected,
-# implement that module first.
 flight_data = load_flight_data()
+
+
+@app.exception_handler(HTTPException)
+async def log_http_exceptions(request: Request, exc: HTTPException):
+    # Log reason when encountering HTTP exception
+    query = f"?{request.url.query}" if request.url.query else ""
+    logger.warning(
+        "%s %s%s -> %s %s",
+        request.method,
+        request.url.path,
+        query,
+        exc.status_code,
+        exc.detail,
+    )
+    return await http_exception_handler(request, exc)
 
 
 @app.get("/health")
@@ -44,11 +62,22 @@ def search(
     origin = origin.upper()
     destination = destination.upper()
 
-    # Step 2 (merged into main.py) -- TODO:
-    # - origin/destination must exist in flight_data.airports -> else 404
-    #   "Unknown airport code: XXX"
-    # - origin == destination -> 400
-    # - date must parse as YYYY-MM-DD (see datetime.date.fromisoformat) -> else 400
+    if origin not in flight_data.airports:
+        raise HTTPException(status_code=404, detail=f"Unknown airport code: {origin}")
+    if destination not in flight_data.airports:
+        raise HTTPException(
+            status_code=404, detail=f"Unknown airport code: {destination}"
+        )
+
+    if origin == destination:
+        raise HTTPException(
+            status_code=400, detail="Origin and destination must not be the same."
+        )
+
+    try:
+        date_cls.fromisoformat(date)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="date must be in YYYY-MM-DD format")
 
     paths = find_itineraries(flight_data, origin, destination, date)
     itineraries = build_and_sort_itineraries(flight_data, paths)
