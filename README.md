@@ -78,6 +78,6 @@ pytest -q
 - **CI**: run `pytest` and a frontend lint/build check on every push; currently tests only run manually.
 - **Stricter data validation at load time**: log (or flag using `/health`) how many records were skipped and why, instead of silently dropping malformed ones.
 - **Pagination / result limits**: `find_itineraries` returns every valid path. On a much larger dataset this could grow large enough to want a limit or streaming response.
-- **Frontend**: sort/filter controls (by price, by stops), airline logos/branding if the dataset ever has more than one airline, component/integration tests (currently untested).
+- **Frontend**: component/integration tests (currently untested), sort/filter controls (by price, by stops), airline logos/branding if the dataset has more than one airline, and I would add a dropdown list of airports options to choose from (user does not need to remember airport codes). Example: San Francisco International Airport (SFO).
 - **Observability**: structured (JSON) logging and request IDs instead of the current plain-text logger, so logs are queryable in a real deployment. Add tracing, record request latency, for when things get larger.
 - **Auth/rate limiting**: the API is fully open right now, not ready for public use.
