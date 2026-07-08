@@ -51,15 +51,18 @@ def load_flight_data(path: str = FLIGHTS_PATH) -> FlightData:
 
     airports = {}
     for airport in flight_data["airports"]:
-        airports[airport["code"]] = Airport(**airport)
-
+        try:
+            airports[airport["code"]] = Airport(**airport)
+        except (TypeError, KeyError):
+            continue 
+        
     flights_by_origin = {}
     for f in flight_data["flights"]:
         try:
             price = float(f["price"])
-        except (TypeError, ValueError):
-            continue
-        flight = Flight(**{**f, "price": price})
+            flight = Flight(**{**f, "price": price})
+        except (TypeError, KeyError, ValueError):
+            continue 
 
         # Group flights by origin
         flights_by_origin.setdefault(flight.origin, []).append(flight)

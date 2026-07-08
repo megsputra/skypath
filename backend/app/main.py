@@ -59,8 +59,8 @@ def search(
     destination: str = Query(..., description="Destination airport code, e.g. JFK"),
     date: str = Query(..., description="Travel date, YYYY-MM-DD"),
 ):
-    origin = origin.upper()
-    destination = destination.upper()
+    origin = origin.strip().upper()
+    destination = destination.strip().upper()
 
     if origin not in flight_data.airports:
         raise HTTPException(status_code=404, detail=f"Unknown airport code: {origin}")
@@ -75,7 +75,7 @@ def search(
         )
 
     try:
-        date_cls.fromisoformat(date)
+        date = date_cls.fromisoformat(date).isoformat()
     except ValueError:
         raise HTTPException(status_code=400, detail="date must be in YYYY-MM-DD format")
 
