@@ -12,10 +12,21 @@ function formatTime(isoLocal) {
   return `${displayHour}:${mm} ${period}`;
 }
 
+// show date of departure and arrival
+function formatDate(isoLocal) {
+  const [datePart] = isoLocal.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 function formatDuration(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return `${hours}h ${minutes}m`;
+  return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 }
 
 function stopLabel(segmentCount) {
@@ -64,9 +75,11 @@ export default function FlightCard({ itinerary, isFastest, isCheapest }) {
             <React.Fragment key={segment.flightNumber + idx}>
               <div className="flex items-center gap-4">
                 {/* Departure */}
-                <div className="w-20 shrink-0">
+                <div className="w-24 shrink-0">
                   <div className="text-base font-semibold text-slate-900">{formatTime(segment.departureTime)}</div>
-                  <div className="text-xs font-medium text-slate-400">{segment.origin}</div>
+                  <div className="text-xs font-medium text-slate-400">
+                    {segment.origin} · {formatDate(segment.departureTime)}
+                  </div>
                 </div>
 
                 {/* Connector with flight info */}
@@ -82,9 +95,11 @@ export default function FlightCard({ itinerary, isFastest, isCheapest }) {
                 </div>
 
                 {/* Arrival */}
-                <div className="w-20 shrink-0 text-right">
+                <div className="w-24 shrink-0 text-right">
                   <div className="text-base font-semibold text-slate-900">{formatTime(segment.arrivalTime)}</div>
-                  <div className="text-xs font-medium text-slate-400">{segment.destination}</div>
+                  <div className="text-xs font-medium text-slate-400">
+                    {formatDate(segment.arrivalTime)} · {segment.destination}
+                  </div>
                 </div>
               </div>
 
